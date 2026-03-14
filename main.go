@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -32,13 +32,20 @@ var tasks = []Task{
 }
 
 func main() {
-	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/tasks", tasksHandler)
-	http.HandleFunc("/tasks/", taskHandler)
+	r := chi.NewRouter()
+	r.Get("/", homeHandler)
+	r.Get("/health", healthHandler)
+
+	r.Post("/tasks", createTask)
+	r.Get("/tasks", getTasks)
+
+	r.Get("/tasks/{id}", getTask)
+	r.Put("/tasks/{id}", updateTask)
+	r.Delete("/tasks/{id}", deleteTask)
+	
 	log.Println("Server running on :8085")
-	log.Fatal(http.ListenAndServe(":8085", nil))
-}
+	log.Fatal(http.ListenAndServe(":8085", r))
+} 
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, I am your backend")
@@ -47,32 +54,6 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "ok")
-}
-
-func tasksHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet: getTasks(w, r)
-	case http.MethodPost: createTask(w, r)
-	default: http.Error(w, "method  not allowed", http.StatusMethodNotAllowed)
-	} 
-}
-
-func taskHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/tasks/") // or id := r.URL.Path[len("/tasks/"):]
-
-	if id == "" {
-		http.Error(w, "task id required", http.StatusBadRequest) //400
-		return
-	}
-
-	switch r.Method {
-	case http.MethodGet:
-		getTask(w, r, id)
-	case http.MethodDelete:
-		deleteTask(w, r, id)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
 }
 
 var validate = validator.New()
@@ -112,7 +93,42 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(task)
 } 
 
-func deleteTask(w http.ResponseWriter, r *http.Request, id string) {
+func updateTask(w http.ResponseWriter, r *http.Request) {
+	var req CreateTaskRequest
+	id := chi.URLParam(r, "id")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	err = validate.Struct(req)
+	if err != nil {
+		http.Error(w, "invalid input", http.StatusBadRequest)
+		return
+	}
+	for i, t := range tasks {
+		if t.ID == idInt {
+			tasks[i].Title = req.Title
+			if req.Priority != "" {
+				tasks[i].Priority = req.Priority
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(tasks[i])
+			return
+		}
+	}
+	http.Error(w, "task not found", http.StatusNotFound) //404
+}
+
+func deleteTask(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		http.Error(w, "invalid id", http.StatusBadRequest)
@@ -133,7 +149,8 @@ func getTasks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tasks)
 }
 
-func getTask(w http.ResponseWriter, r *http.Request, id string) {
+func getTask(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		http.Error(w, "error", http.StatusBadRequest)
