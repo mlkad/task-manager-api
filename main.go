@@ -65,9 +65,10 @@ func (h *TaskHandler) healthHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "ok")
 }
 
-var validate = validator.New()
+var validate = validator.New() //TODO: validate to handler
 
 func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var req CreateTaskRequest
 
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -103,6 +104,7 @@ func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 } 
 
 func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var req CreateTaskRequest
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
