@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"task-manager-backend/middleware"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -13,12 +14,12 @@ import (
 )
 
 type Task struct {
-	ID int `json:"id"`
-	Title string `json:"title"`
-	Done bool `json:"done"`
+	ID        int       `json:"id"`
+	Title     string    `json:"title"`
+	Done      bool      `json:"done"`
 	CreatedAt time.Time `json:"created_at"`
-	Password string `json:"-"`
-	Priority string `json:"priority"`
+	Password  string    `json:"-"`
+	Priority  string    `json:"priority"`
 }
 
 type TaskHandler struct {
@@ -26,7 +27,7 @@ type TaskHandler struct {
 }
 
 type CreateTaskRequest struct {
-	Title string `json:"title" validate:"required,min=3"`
+	Title    string `json:"title" validate:"required,min=3"`
 	Priority string `json:"priority"`
 }
 
@@ -35,26 +36,28 @@ type CreateTaskRequest struct {
 // 	{ID: 2, Title: "buy milk", Done: true, Priority: "low"},
 // }
 
-
-
 func main() {
 	handler := &TaskHandler{
 		tasks: []Task{},
 	}
 	r := chi.NewRouter()
+	// r.Use(middleware.MyMiddleware)
 	r.Get("/", handler.homeHandler)
 	r.Get("/health", handler.healthHandler)
 
-	r.Post("/tasks", handler.createTask)
-	r.Get("/tasks", handler.getTasks)
+	r.Route("/tasks", func(r chi.Router) {
+		r.Use(middleware.APIKeyMiddleware)
+		r.Post("", handler.createTask)
+		r.Get("", handler.getTasks)
 
-	r.Get("/tasks/{id}", handler.getTask)
-	r.Put("/tasks/{id}", handler.updateTask)
-	r.Delete("/tasks/{id}", handler.deleteTask)
-	
+		r.Get("/{id}", handler.getTask)
+		r.Put("/{id}", handler.updateTask)
+		r.Delete("/{id}", handler.deleteTask)
+	})
+
 	log.Println("Server running on :8085")
 	log.Fatal(http.ListenAndServe(":8085", r))
-} 
+}
 
 func (h *TaskHandler) homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, I am your backend")
@@ -74,7 +77,7 @@ func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid json", http.StatusBadRequest)
-		return 
+		return
 	}
 
 	err = validate.Struct(req)
@@ -90,18 +93,18 @@ func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task := Task{
-		ID: len(h.tasks) + 1,
-		Title: req.Title,
-		Done: false,
+		ID:        len(h.tasks) + 1,
+		Title:     req.Title,
+		Done:      false,
 		CreatedAt: time.Now(),
-		Priority: priority,
+		Priority:  priority,
 	}
 
 	h.tasks = append(h.tasks, task)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(task)
-} 
+}
 
 func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -177,95 +180,3 @@ func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Task not found", http.StatusNotFound)
 }
 
-/*
-package main
-
-import (
- "context"
- "encoding/json"
- "log"
- "net/http"
-
- "github.com/jackc/pgx/v5"
-)
-
-var conn *pgx.Conn
-
-type User struct {
- ID   int    json:"id"
- Name string json:"name"
-}
-
-func main() {
- var err error
- conn, err = pgx.Connect(context.Background(),
-  "postgres://postgres:password@localhost:5432/mydb")
- if err != nil {
-  log.Fatal(err)
- }
-
- http.HandleFunc("/users", usersHandler)
-
- log.Println("Server started on :8080")
- log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func usersHandler(w http.ResponseWriter, r *http.Request) {
- switch r.Method {
-
- case http.MethodGet:
-  getUsers(w)
-
- case http.MethodPost:
-  createUser(w, r)
-
- default:
-  http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
- }
-}
-
-func getUsers(w http.ResponseWriter) {
- rows, err := conn.Query(context.Background(),
-  "SELECT id, name FROM users")
- if err != nil {
-  http.Error(w, err.Error(), 500)
-  return
- }
- defer rows.Close()
-
- var users []User
-
- for rows.Next() {
-  var u User
-  err := rows.Scan(&u.ID, &u.Name)
-  if err != nil {
-   http.Error(w, err.Error(), 500)
-   return
-  }
-  users = append(users, u)
- }
-
- json.NewEncoder(w).Encode(users)
-}
-
-func createUser(w http.ResponseWriter, r *http.Request) {
- var u User
-
- err := json.NewDecoder(r.Body).Decode(&u)
- if err != nil {
-  http.Error(w, err.Error(), 400)
-  return
- }
-
- err = conn.QueryRow(context.Background(),
-  "INSERT INTO users (name) VALUES ($1) RETURNING id",
-  u.Name).Scan(&u.ID)
- if err != nil {
-  http.Error(w, err.Error(), 500)
-  return
- }
-
- w.WriteHeader(http.StatusCreated)
- json.NewEncoder(w).Encode(u)
-}
-*/

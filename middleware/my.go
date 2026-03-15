@@ -1,9 +1,10 @@
-package mymiddleware
+package middleware
 
 import (
 	"fmt"
 	"net/http"
 )
+
 func MyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Request:", r.Method, r.URL.Path)
@@ -12,7 +13,7 @@ func MyMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 
 		fmt.Println("Done")
-		
+
 	})
 }
 
