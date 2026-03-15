@@ -21,44 +21,53 @@ type Task struct {
 	Priority string `json:"priority"`
 }
 
+type TaskHandler struct {
+	tasks []Task
+}
+
 type CreateTaskRequest struct {
 	Title string `json:"title" validate:"required,min=3"`
 	Priority string `json:"priority"`
 }
 
-var tasks = []Task{
-	{ID: 1, Title: "learn golang", Done: false, CreatedAt: time.Now(), Priority: "low"},
-	{ID: 2, Title: "buy milk", Done: true, Priority: "low"},
-}
+// var tasks = []Task{
+// 	{ID: 1, Title: "learn golang", Done: false, CreatedAt: time.Now(), Priority: "low"},
+// 	{ID: 2, Title: "buy milk", Done: true, Priority: "low"},
+// }
+
+
 
 func main() {
+	handler := &TaskHandler{
+		tasks: []Task{},
+	}
 	r := chi.NewRouter()
-	r.Get("/", homeHandler)
-	r.Get("/health", healthHandler)
+	r.Get("/", handler.homeHandler)
+	r.Get("/health", handler.healthHandler)
 
-	r.Post("/tasks", createTask)
-	r.Get("/tasks", getTasks)
+	r.Post("/tasks", handler.createTask)
+	r.Get("/tasks", handler.getTasks)
 
-	r.Get("/tasks/{id}", getTask)
-	r.Put("/tasks/{id}", updateTask)
-	r.Delete("/tasks/{id}", deleteTask)
+	r.Get("/tasks/{id}", handler.getTask)
+	r.Put("/tasks/{id}", handler.updateTask)
+	r.Delete("/tasks/{id}", handler.deleteTask)
 	
 	log.Println("Server running on :8085")
 	log.Fatal(http.ListenAndServe(":8085", r))
 } 
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, I am your backend")
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "ok")
 }
 
 var validate = validator.New()
 
-func createTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	var req CreateTaskRequest
 
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -80,20 +89,20 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task := Task{
-		ID: len(tasks) + 1,
+		ID: len(h.tasks) + 1,
 		Title: req.Title,
 		Done: false,
 		CreatedAt: time.Now(),
 		Priority: priority,
 	}
 
-	tasks = append(tasks, task)
+	h.tasks = append(h.tasks, task)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(task)
 } 
 
-func updateTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request) {
 	var req CreateTaskRequest
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
@@ -113,30 +122,30 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid input", http.StatusBadRequest)
 		return
 	}
-	for i, t := range tasks {
+	for i, t := range h.tasks {
 		if t.ID == idInt {
-			tasks[i].Title = req.Title
+			h.tasks[i].Title = req.Title
 			if req.Priority != "" {
-				tasks[i].Priority = req.Priority
+				h.tasks[i].Priority = req.Priority
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(tasks[i])
+			json.NewEncoder(w).Encode(h.tasks[i])
 			return
 		}
 	}
 	http.Error(w, "task not found", http.StatusNotFound) //404
 }
 
-func deleteTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) deleteTask(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
-	for i, t := range tasks {
+	for i, t := range h.tasks {
 		if t.ID == idInt {
-			tasks = append(tasks[:i], tasks[i+1:]...)
+			h.tasks = append(h.tasks[:i], h.tasks[i+1:]...)
 			w.WriteHeader(http.StatusNoContent) //delete 204
 			return
 		}
@@ -144,19 +153,19 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "task not found", http.StatusNotFound)
 }
 
-func getTasks(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) getTasks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tasks)
+	json.NewEncoder(w).Encode(h.tasks)
 }
 
-func getTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		http.Error(w, "error", http.StatusBadRequest)
 		return
 	}
-	for _, t := range tasks {
+	for _, t := range h.tasks {
 		if idInt == t.ID {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(t)
