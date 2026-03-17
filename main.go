@@ -25,7 +25,8 @@ type Task struct {
 }
 
 type TaskHandler struct {
-	tasks []Task
+	tasks    []Task
+	validate *validator.Validate
 }
 
 type CreateTaskRequest struct {
@@ -42,7 +43,8 @@ func main() {
 	log := zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 	handler := &TaskHandler{
-		tasks: []Task{},
+		tasks:    []Task{},
+		validate: validator.New(),
 	}
 
 	r := chi.NewRouter()
@@ -78,7 +80,7 @@ func (h *TaskHandler) healthHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "ok")
 }
 
-var validate = validator.New() //TODO: validate to handler
+// var validate = validator.New() //TODO: validate to handler
 
 func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -90,7 +92,7 @@ func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = validate.Struct(req)
+	err = h.validate.Struct(req)
 	if err != nil {
 		http.Error(w, "invalid input", http.StatusBadRequest) //400
 		return
@@ -132,7 +134,7 @@ func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = validate.Struct(req)
+	err = h.validate.Struct(req)
 	if err != nil {
 		http.Error(w, "invalid input", http.StatusBadRequest)
 		return

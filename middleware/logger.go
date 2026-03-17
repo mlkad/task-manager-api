@@ -11,12 +11,22 @@ import (
 func Logger(log zerolog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now() //измерить latency (время ответа)
-			ww := chimiddleware.NewWrapResponseWriter(w, r.ProtoMajor) //создание обёртки над http.ResponseWriter, которая позволяет узнать HTTP статус и размер ответа
+			start := time.Now()                                        //измерить latency (время ответа)
+			ww := chimiddleware.NewWrapResponseWriter(w, r.ProtoMajor) //создание обёртки над http.ResponseWriter, которая узнает HTTP статус и размер ответа
 			//ww  = wrapped writer
 
-			next.ServeHTTP(ww, r)
-			log.Info().Str("method", r.Method).Str("path", r.URL.Path).Int("status", ww.Status()).Dur("duration", time.Since(start)).Msg("request")
+			next.ServeHTTP(ww, r) //выполняется handler
+			event := log.Info().Str("method", r.Method).Str("path", r.URL.Path).Int("status", ww.Status()).Dur("duration", time.Since(start))
+
+			if requestID, ok := r.Context().Value(requestIDKey).(string); ok && requestID != ""{
+				event = event.Str("request_id", requestID)
+			}
+
+			if userID, ok := r.Context().Value(userIDKey).(string); ok && userID != "" {
+				event = event.Str("user_id", userID)
+			}
+
+			event.Msg("request")
 		})
 	}
 }
