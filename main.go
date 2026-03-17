@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"task-manager-backend/middleware"
 	"time"
+
+	"github.com/rs/zerolog"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
@@ -37,6 +39,7 @@ type CreateTaskRequest struct {
 // }
 
 func main() {
+	log := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	handler := &TaskHandler{
 		tasks: []Task{},
 	}
@@ -179,4 +182,3 @@ func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Error(w, "Task not found", http.StatusNotFound)
 }
-
