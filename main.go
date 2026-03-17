@@ -40,11 +40,16 @@ type CreateTaskRequest struct {
 
 func main() {
 	log := zerolog.New(os.Stdout).With().Timestamp().Logger()
+
 	handler := &TaskHandler{
 		tasks: []Task{},
 	}
+
 	r := chi.NewRouter()
+
+	r.Use(middleware.Logger(log))
 	// r.Use(middleware.MyMiddleware)
+
 	r.Get("/", handler.homeHandler)
 	r.Get("/health", handler.healthHandler)
 
@@ -58,8 +63,10 @@ func main() {
 		r.Delete("/{id}", handler.deleteTask)
 	})
 
-	log.Println("Server running on :8085")
-	log.Fatal(http.ListenAndServe(":8085", r))
+	log.Info().Msg("Server running on :8085")
+	if err := http.ListenAndServe(":8085", r); err != nil {
+		log.Fatal().Err(err).Msg("server failed")
+	}
 }
 
 func (h *TaskHandler) homeHandler(w http.ResponseWriter, r *http.Request) {
