@@ -14,7 +14,7 @@ import (
 type TaskRepository interface {
 	GetAll(userID int) ([]models.Task, error)     //дай userID → верну список задач
 	GetByID(id, userID int) (models.Task, error)  //дай id задачи и юзера → верну одну задачу
-	Create(Task models.Task) (models.Task, error) //дай задачу → сохраню → верну её с ID
+	Create(task models.Task) (models.Task, error) //дай задачу → сохраню → верну её с ID
 	Update(task models.Task) error                //обновлю задачу
 	Delete(id, userID int) error                  //удалю задачу
 }
@@ -50,9 +50,10 @@ func (r *taskRepo) GetByID(id, userID int) (models.Task, error) {
 	var task models.Task
 
 	err := r.db.QueryRow("SELECT id, title, done, priority, user_id, created_at FROM tasks WHERE ID=$1 AND user_id=$2", id, userID).Scan(&task.ID, &task.Title, &task.Done, &task.Priority, &task.UserID, &task.CreatedAt)
+  //Scan — это способ прочитать результат SQL-запроса в Go-переменные
 
 	if err != nil {
-			return models.Task{}, err
+		return models.Task{}, err //возвращаем пустую задачу и ошибку
 	}
 
 	return task, nil
@@ -61,4 +62,20 @@ func (r *taskRepo) GetByID(id, userID int) (models.Task, error) {
 func (r *taskRepo) Create(task models.Task) (models.Task, error) {
 	err := r.db.QueryRow("INSERT INTO tasks (title, done, priority, user_id) VALUES ($1,$2,$3,$4) RETURNING id, created_at", task.Title, task.Done, task.Priority, task.UserID).Scan(&task.ID, &task.CreatedAt)
 	return task, err
+}
+
+func (r *taskRepo) Update(task models.Task) error {
+	res, err := r.db.Exec(`UPDATE tasks SET title = $1, done = $2, priority = $3 WHERE id = $4 AND user_id = $5`, task.Title, task.Done, task.Priority, task.ID, task.UserID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected() //Сколько строк ты затронул?
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
