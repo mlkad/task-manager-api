@@ -7,11 +7,14 @@ import (
 	"github.com/google/uuid"
 )
 
+// каждому запросу даёт уникальный ID
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestID := uuid.NewString() //генерируем уникальный ID
+		meta := &RequestMeta{
+			RequestID: uuid.NewString(), //генерируем уникальный ID
+		}
 
-		ctx := context.WithValue(r.Context(), requestIDKey, requestID) //кладём ID в context
-		next.ServeHTTP(w, r.WithContext(ctx)) //передаём дальше, но уже с обновлённым context
+		ctx := context.WithValue(r.Context(), requestMetaKey, meta) //кладём ID в context
+		next.ServeHTTP(w, r.WithContext(ctx))                       //передаём дальше, но уже с обновлённым context
 	})
 }

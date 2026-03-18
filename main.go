@@ -48,7 +48,7 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-
+	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger(log))
 	// r.Use(middleware.MyMiddleware)
 
@@ -57,8 +57,8 @@ func main() {
 
 	r.Route("/tasks", func(r chi.Router) {
 		r.Use(middleware.APIKeyMiddleware)
-		r.Post("", handler.createTask)
-		r.Get("", handler.getTasks)
+		r.Post("/", handler.createTask)
+		r.Get("/", handler.getTasks)
 
 		r.Get("/{id}", handler.getTask)
 		r.Put("/{id}", handler.updateTask)
@@ -79,8 +79,6 @@ func (h *TaskHandler) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "ok")
 }
-
-// var validate = validator.New() //TODO: validate to handler
 
 func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()

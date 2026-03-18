@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// логирует каждый запрос
 func Logger(log zerolog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,14 +19,18 @@ func Logger(log zerolog.Logger) func(http.Handler) http.Handler {
 			next.ServeHTTP(ww, r) //выполняется handler
 			event := log.Info().Str("method", r.Method).Str("path", r.URL.Path).Int("status", ww.Status()).Dur("duration", time.Since(start))
 
-			if requestID, ok := r.Context().Value(requestIDKey).(string); ok && requestID != ""{
-				event = event.Str("request_id", requestID)
-			}
+			//достаём ID из context
+			meta, ok := r.Context().Value(requestMetaKey).(*RequestMeta)
+			if ok && meta != nil {
+				if meta.RequestID != "" {
+					event = event.Str("request_id", meta.RequestID)
+				}
 
-			if userID, ok := r.Context().Value(userIDKey).(string); ok && userID != "" {
-				event = event.Str("user_id", userID)
+				//достаём пользователя
+				if meta.UserID != "" {
+					event = event.Str("user_id", meta.UserID)
+				}
 			}
-
 			event.Msg("request")
 		})
 	}
