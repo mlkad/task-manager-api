@@ -23,7 +23,8 @@ type taskRepo struct {
 	db *sql.DB
 }
 
-//создаёт репозиторий и даёт ему доступ к базе
+// repository = “посредник между приложением и базой данных”
+// создаёт репозиторий и даёт ему доступ к базе
 func NewTaskRepo(db *sql.DB) TaskRepository {
 	return &taskRepo{db: db}
 }
@@ -50,7 +51,7 @@ func (r *taskRepo) GetByID(id, userID int) (models.Task, error) {
 	var task models.Task
 
 	err := r.db.QueryRow("SELECT id, title, done, priority, user_id, created_at FROM tasks WHERE ID=$1 AND user_id=$2", id, userID).Scan(&task.ID, &task.Title, &task.Done, &task.Priority, &task.UserID, &task.CreatedAt)
-  //Scan — это способ прочитать результат SQL-запроса в Go-переменные
+	//Scan — это способ прочитать результат SQL-запроса в Go-переменные
 
 	if err != nil {
 		return models.Task{}, err //возвращаем пустую задачу и ошибку
