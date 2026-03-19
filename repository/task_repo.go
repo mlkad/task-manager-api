@@ -79,3 +79,18 @@ func (r *taskRepo) Update(task models.Task) error {
 	}
 	return nil
 }
+
+func (r *taskRepo) Delete(id, userID int) error {
+	res, err := r.db.Exec("DELETE FROM tasks WHERE id = $1 AND user_id = $2", id, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
