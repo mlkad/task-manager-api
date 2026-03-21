@@ -65,8 +65,8 @@ func main() {
 		r.Delete("/{id}", handler.deleteTask)
 	})
 
-	log.Info().Msg("Server running on :8085")
-	if err := http.ListenAndServe(":8085", r); err != nil {
+	log.Info().Msg("Server running on :8083")
+	if err := http.ListenAndServe(":8083", r); err != nil {
 		log.Fatal().Err(err).Msg("server failed")
 	}
 }
