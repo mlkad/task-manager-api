@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"task-manager-backend/middleware"
+	"task-manager-backend/repository"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -15,14 +16,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type Task struct {
-	ID        int       `json:"id"`
-	Title     string    `json:"title"`
-	Done      bool      `json:"done"`
-	CreatedAt time.Time `json:"created_at"`
-	Password  string    `json:"-"`
-	Priority  string    `json:"priority"`
-}
 
 type TaskHandler struct {
 	tasks    []Task
@@ -40,6 +33,12 @@ type CreateTaskRequest struct {
 // }
 
 func main() {
+	db := initDB()
+	taskRepo := repository.NewTaskRepo(db) //создаёшь репозиторий задач, который работает с базой
+	userRepo := repository.NewUserRepo(db) //создаёшь репозиторий пользователей
+
+	defer db.Close()
+	
 	log := zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 	handler := &TaskHandler{

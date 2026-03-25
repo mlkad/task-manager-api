@@ -1,0 +1,32 @@
+package main
+
+import (
+    "database/sql"
+    "log"
+    "os"
+    "time"
+
+    _ "github.com/lib/pq"  // "_" = импорт ради регистрации PostgreSQL драйвера
+)
+
+func initDB() *sql.DB {
+    dbURL := os.Getenv("DB_URL")
+    if dbURL == "" {
+        dbURL = "postgres://postgres:password@localhost:5432/taskdb?sslmode=disable"
+    }
+
+    db, err := sql.Open("postgres", dbURL)  // готовит соединение, не подключается
+    if err != nil { log.Fatal(err) }
+
+    // Настройка пула соединений — важно для production
+    db.SetMaxOpenConns(25)       // максимум открытых соединений
+    db.SetMaxIdleConns(25)       // максимум idle соединений
+    db.SetConnMaxLifetime(5 * time.Minute)
+
+    if err = db.Ping(); err != nil {  // реальное подключение
+        log.Fatal("Cannot connect to DB:", err)
+    }
+
+    log.Println("Connected to database!")
+    return db
+}
