@@ -1,17 +1,18 @@
 version: "3.8"
 services:
   app:
+    container_name: task-manager-backend-app
     build: .
     ports:
-      - "8083:8083"
+      - "8084:8083"
     environment:
-      - DB_URL=postgres://postgres:password@db:5432/taskdb?sslmode=disable
+      - DB_URL=postgres://postgres:password@db:5441/taskdb?sslmode=disable
     depends_on:
       db:
-        condition: service_healthy # ждём пока БД фготова принимать соединения
-    restart: unless-stopped
+        condition: service_healthy # ждём пока БД готова принимать соединения
 
   db:
+    container_name: task-manager-backend-db
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
@@ -20,7 +21,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5441:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

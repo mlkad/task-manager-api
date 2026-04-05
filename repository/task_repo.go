@@ -3,6 +3,7 @@ package repository
 //repository — это слой, который берёт данные из БД и кладёт данные в БД
 import (
 	"database/sql"
+	"strconv"
 	"task-manager-backend/models"
 )
 
@@ -12,7 +13,7 @@ import (
 // Это позволяет подменять реализацию в тестах (mock).
 
 type TaskRepository interface {
-	GetAll(userID int) ([]models.Task, error)     //дай userID → верну список задач
+	GetAll(userID int, done *bool, priority *string) ([]models.Task, error)     //дай userID → верну список задач
 	GetByID(id, userID int) (models.Task, error)  //дай id задачи и юзера → верну одну задачу
 	Create(task models.Task) (models.Task, error) //дай задачу → сохраню → верну её с ID
 	Update(task models.Task) error                //обновлю задачу
@@ -29,8 +30,23 @@ func NewTaskRepo(db *sql.DB) TaskRepository {
 	return &taskRepo{db: db}
 }
 
-func (r *taskRepo) GetAll(userID int) ([]models.Task, error) {
-	rows, err := r.db.Query("SELECT id, title, done, priority, user_id, created_at FROM tasks WHERE user_id=$1 ORDER BY created_at DESC", userID)
+func (r *taskRepo) GetAll(userID int, done *bool, priority *string) ([]models.Task, error) {
+	query := "SELECT id, title, done, priority, user_id, created_at FROM tasks WHERE user_id = $1"
+	args := []interface{}{userID}
+
+	if done != nil {
+		query += " AND done = $" + strconv.Itoa(len(args)+1)
+		args = append(args, *done)
+	}
+
+	if priority != nil {
+		query += " AND priority = $" + strconv.Itoa(len(args)+1)
+		args = append(args, *priority)
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,7 @@ import (
 func initDB() *sql.DB {
     dbURL := os.Getenv("DB_URL")
     if dbURL == "" {
-        dbURL = "postgres://postgres:password@localhost:5432/taskdb?sslmode=disable"
+        dbURL = "postgres://postgres:password@localhost:5441/taskdb?sslmode=disable"
     }
 
     db, err := sql.Open("postgres", dbURL)  // готовит соединение, не подключается

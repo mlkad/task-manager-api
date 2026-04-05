@@ -1,5 +1,5 @@
 package middleware
-
+/*
 type contextKey string
 
 type RequestMeta struct {
@@ -8,10 +8,10 @@ type RequestMeta struct {
 }
 
 const (
-	requestMetaKey contextKey = "request_meta"
+	RequestMetaKey contextKey = "request_meta"
 )
 
-/*
+
 Мы добавили 4 логических вещи:
 
 структуру RequestMeta

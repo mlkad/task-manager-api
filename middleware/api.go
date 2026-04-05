@@ -1,5 +1,5 @@
 package middleware
-
+/*
 import (
 	"net/http"
 )
@@ -14,10 +14,11 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		meta, ok := r.Context().Value(requestMetaKey).(*RequestMeta) //считай это указателем на RequestMeta
+		meta, ok := r.Context().Value(RequestMetaKey).(*RequestMeta) //считай это указателем на RequestMeta
 		if ok && meta != nil {
 			meta.UserID = "123"
 		}
 		next.ServeHTTP(w, r)
 	})
 }
+*/

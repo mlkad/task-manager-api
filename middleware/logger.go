@@ -20,16 +20,9 @@ func Logger(log zerolog.Logger) func(http.Handler) http.Handler {
 			event := log.Info().Str("method", r.Method).Str("path", r.URL.Path).Int("status", ww.Status()).Dur("duration", time.Since(start))
 
 			//достаём ID из context
-			meta, ok := r.Context().Value(requestMetaKey).(*RequestMeta)
-			if ok && meta != nil {
-				if meta.RequestID != "" {
-					event = event.Str("request_id", meta.RequestID)
-				}
-
-				//достаём пользователя
-				if meta.UserID != "" {
-					event = event.Str("user_id", meta.UserID)
-				}
+			userID, ok := r.Context().Value("user_id").(int)
+			if ok {					
+				event = event.Int("user_id", userID)
 			}
 			event.Msg("request")
 		})

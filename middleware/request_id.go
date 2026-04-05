@@ -1,5 +1,5 @@
 package middleware
-
+/*
 import (
 	"context"
 	"net/http"
@@ -14,7 +14,8 @@ func RequestID(next http.Handler) http.Handler {
 			RequestID: uuid.NewString(), //генерируем уникальный ID
 		}
 
-		ctx := context.WithValue(r.Context(), requestMetaKey, meta) //кладём ID в context
+		ctx := context.WithValue(r.Context(), RequestMetaKey, meta) //кладём ID в context
 		next.ServeHTTP(w, r.WithContext(ctx))                       //передаём дальше, но уже с обновлённым context
 	})
 }
+*/
